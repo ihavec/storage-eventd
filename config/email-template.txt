@@ -1,0 +1,3 @@
+Device ${DEVNAME} has issued a warning.
+
+SCSI SENSE: ${SDEV_UA}

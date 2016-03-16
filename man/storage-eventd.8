@@ -1,0 +1,49 @@
+.TH STORAGE-EVENTD 8 "April 2016" "storage-eventd" "System Administration"
+.SH NAME
+storage-eventd \- handle uevents from the storage subsystem
+.SH SYNOPSIS
+.B storage-eventd
+[\fI\,OPTION\/\fR]...
+.SH DESCRIPTION
+storage-eventd is a daemon that listens for and executes actions automatically
+based on a set of filters.  When invoked without arguments, storage-eventd will read the default configuration file /etc/storage-eventd.conf, detach from the terminal, and listen for uevents.
+
+.SH OPTIONS
+.TP
+.BR \-c , " \-\-config " \fIconfig-file
+Load a config file other than the default.
+.TP
+.BR \-f , " \-\-foreground "
+Stay in the foreground.  Do not daemonize.
+.TP
+.BR \-d , " \-\-debug "
+Enable debugging mode.  Additional output.  Implies -f.
+.TP
+.BR \-v , " \-\-verbose "
+Increased verbosity.  Can be specified multiple times.
+.TP
+.BR \-n , " \-\-dry\-run "
+Listen for events but only print actions that would be performed instead of
+executing them.
+.TP
+.BR \-u , " \-\-user "
+Unprivileged user to use for normal execution. The default user is
+.IR nobody.
+.TP
+.BR \-g , " \-\-group "
+Unprivileged group to use for normal execution.  The default group is the
+primary group for the user
+.IR nobody.
+.TP
+.BR \-p , " \-\-pidfile "
+Path to file in which to write the process id of the main process.  This is
+useful to allow the init system to locate the correct process to terminate.
+.TP
+.BR \-V , " \-\-version "
+Print the version of storage-eventd and exit.
+.TP
+.BR \-h , " \-\-help "
+Display help text and exit.
+
+.SH "SEE ALSO"
+.BR storage-eventd.conf (5)
