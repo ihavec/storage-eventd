@@ -1,0 +1,14 @@
+tags
+*~
+*.o
+.la
+*.so
+core
+autom4te.cache/
+.deps
+config.log
+Makefile
+Makefile.in
+configure
+config.status
+.*.sw?
