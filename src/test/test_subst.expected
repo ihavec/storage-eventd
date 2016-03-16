@@ -1,0 +1,44 @@
+parse error at end of input: missing closing `}' for variable substitution.
+parse error at end of input: missing closing `}' for variable substitution.
+parse error at end of input: missing closing `}' for variable substitution.
+parse error at end of input: missing closing `}' for variable substitution.
+parse error at end of input: missing closing `}' for variable substitution.
+C: "${VALUE}"
+0: V/"VALUE"
+---
+C: "${VA${FOO}LUE}"
+0: V/"VA${FOO}LUE"
+---
+C: "${VA${FOO}LUE"
+---
+C: "Test then open variable ${VA${FOO}LUE"
+---
+C: "${VA${FOO}LUE and more text"
+---
+C: "Test then open variable ${VA${FOO}LUE and more text"
+---
+C: "This is a test ${VALUE}"
+0: L/"This is a test "
+1: V/"VALUE"
+---
+C: "This is a test ${VALUE} with text after"
+0: L/"This is a test "
+1: V/"VALUE"
+2: L/" with text after"
+---
+C: "This is a test ${VALUE} with text after and another ${VAR}"
+0: L/"This is a test "
+1: V/"VALUE"
+2: L/" with text after and another "
+3: V/"VAR"
+---
+C: "This is a test ${VALUE} with text after and another ${VAR} text"
+0: L/"This is a test "
+1: V/"VALUE"
+2: L/" with text after and another "
+3: V/"VAR"
+4: L/" text"
+---
+C: "This is a test $VALUE} with text after and another ${VAR} text"
+test `This is a test $VALUE} with text after and another ${VAR} text' failed.
+---
