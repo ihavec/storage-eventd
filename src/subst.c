@@ -136,7 +136,12 @@ subst_replace(const struct subst_vec *vec, subst_lookup_fn lookup, void *data)
 	bool needs_free[vec->count];
 	int lengths[vec->count];
 
+	/* A string literal */
+	if (vec->count == 1 && vec->vec[0].literal) 
+		return strndup(vec->vec[0].value, vec->vec[0].len);
+
 	memset(props, 0, sizeof(props));
+
 
 	for (i = 0; i < vec->count; i++) {
 		const char *key;
