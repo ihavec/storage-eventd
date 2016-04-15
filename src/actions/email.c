@@ -98,6 +98,10 @@ setup(const struct action_type *type, const config_setting_t *setting)
 	}
 
 	action = zalloc(sizeof(*action) + sizeof(char *) * rcount);
+	if (!action) {
+		log_err("failed to allocate memory for email action.");
+		return NULL;
+	}
 	action_init(&action->base, setting, type);
 	action->recipient_count = rcount;
 

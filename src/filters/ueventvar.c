@@ -56,9 +56,11 @@ setup(const struct filter_type *ftype, const config_setting_t *setting)
 		return NULL;
 
 	filter = zalloc(sizeof(*filter));
-	filter_init(&filter->base, setting, ftype);
-	if (!filter)
+	if (!filter) {
+		log_err("failed to alloc memory for uevent filter.");
 		return NULL;
+	}
+	filter_init(&filter->base, setting, ftype);
 
 	filter->name = config_setting_get_string(name);
 	filter->value = config_setting_get_string(value);

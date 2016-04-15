@@ -100,6 +100,10 @@ setup(const struct action_type *type, const config_setting_t *setting)
 	int ret;
 
 	action = zalloc(sizeof(*action));
+	if (!action) {
+		log_err("failed to alloc memory for exec action.");
+		return NULL;
+	}
 	action_init(&action->base, setting, type);
 
 	command = config_setting_get_member(setting, "command");

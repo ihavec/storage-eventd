@@ -11,6 +11,10 @@ action_setup_ignore(const struct action_type *type,
 		    const config_setting_t *setting)
 {
 	struct action *action = zalloc(sizeof(*action));
+	if (!action) {
+		log_err("failed to alloc memory for ignore action.");
+		return NULL;
+	}
 
 	__action_init(action, "ignore", type);
 	return action;
