@@ -19,4 +19,5 @@ const char *util_blkid_get_devno_uuid(dev_t devno);
 
 const char *util_get_any_mountpoint_devno(dev_t devno);
 
+char * util_strjoin(const char *args[], char *sep);
 #endif /* _UTIL_H_ */

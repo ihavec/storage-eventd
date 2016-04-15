@@ -254,27 +254,14 @@ execute(const struct action *base_action, struct udev_device *uevent)
 			goto no_exec;
 
 		if (global_state.debug || global_state.dry_run) {
-			char *buf, *ptr;
-			size_t len  = 0;
-
-			for (i = 0; args[i]; i++)
-				len += strlen(args[i]) + 2;
-
-			buf = ptr = malloc(len);
-			for (i = 0; args[i]; i++) {
-				int chars;
-				chars = snprintf(ptr, len, "%s%s", i ? " " : "",
-						 args[i]);
-				ptr += chars;
-				len -= chars;
-			}
-
+			char *cmdline = util_strjoin(args, " ");
 			if (global_state.dry_run)
-				log_info("Would start child for \"%s\"\n", buf);
+				log_info("Would start child for \"%s\"\n",
+					 cmdline);
 			else
 				log_debug("Starting child %u: %s",
-					  getpid(), buf);
-			free(buf);
+					  getpid(), cmdline);
+			free(cmdline);
 			if (global_state.dry_run)
 				return 0;
 		}

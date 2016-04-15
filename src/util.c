@@ -391,4 +391,22 @@ util_get_any_mountpoint_devno(dev_t devno)
 	return value;
 }
 
+char *
+util_strjoin(const char *args[], char *sep)
+{
+	char *buf, *ptr;
+	size_t len  = 0;
+	int i;
 
+	for (i = 0; args[i]; i++)
+		len += strlen(args[i]) + 2;
+
+	buf = ptr = malloc(len);
+	for (i = 0; args[i]; i++) {
+		int chars;
+		chars = snprintf(ptr, len, "%s%s", i ? sep : "", args[i]);
+		ptr += chars;
+		len -= chars;
+	}
+	return buf;
+}
