@@ -7,7 +7,6 @@
 struct filter_type;
 struct filter {
 	const char *name;
-	const char *pattern;
 	const struct filter_type *type;
 	struct list_head node;
 };
