@@ -31,6 +31,7 @@ const struct filter *filter_lookup(const struct list_head *filters,
 				   const config_setting_t *filter_name);
 struct filter *filter_setup(const config_setting_t *setting);
 bool filter_execute(const struct filter *filter, struct udev_device *uevent);
+void filter_release(struct filter *filter);
 
 extern struct filter_type dev_path_filter;
 extern struct filter_type uevent_var_filter;
