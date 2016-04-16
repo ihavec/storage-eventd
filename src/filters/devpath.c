@@ -39,9 +39,6 @@ setup(const struct filter_type *type, const struct config_setting_t *setting)
 		return NULL;
 	}
 
-	if (!config_setting_require_string(pattern))
-		return NULL;
-
 	filter = zalloc(sizeof(*filter));
 	if (!filter) {
 		log_err("failed to alloc memory for devpath filter");
@@ -49,7 +46,11 @@ setup(const struct filter_type *type, const struct config_setting_t *setting)
 	}
 
 	filter_init(&filter->base, setting, type);
-	filter->pattern = config_setting_get_string(pattern);
+	filter->pattern = config_setting_require_string(pattern);
+	if (!filter->pattern) {
+		filter_release(&filter->base);
+		return NULL;
+	}
 	return &filter->base;
 }
 

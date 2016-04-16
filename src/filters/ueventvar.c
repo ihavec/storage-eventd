@@ -37,24 +37,6 @@ setup(const struct filter_type *ftype, const config_setting_t *setting)
 	struct ueventvar_filter *filter;
 	int ret;
 
-	name = config_setting_get_member(setting, "name");
-	if (!name) {
-		config_error(setting, "filter type `ueventvar' requires `name' as literal string.");
-		return NULL;
-	}
-
-	if (!config_setting_require_string(name))
-		return NULL;
-
-	value = config_setting_get_member(setting, "value");
-	if (!value) {
-		config_error(setting, "filter type `ueventvar' requires `value' as string describing a regular expression.");
-		return NULL;
-	}
-
-	if (!config_setting_require_string(value))
-		return NULL;
-
 	filter = zalloc(sizeof(*filter));
 	if (!filter) {
 		log_err("failed to alloc memory for uevent filter.");
@@ -62,19 +44,40 @@ setup(const struct filter_type *ftype, const config_setting_t *setting)
 	}
 	filter_init(&filter->base, setting, ftype);
 
-	filter->name = config_setting_get_string(name);
-	filter->value = config_setting_get_string(value);
+	name = config_setting_get_member(setting, "name");
+	if (!name) {
+		config_error(setting,
+			     "filter type `ueventvar' requires `name' as literal string.");
+		goto free;
+	}
+
+	filter->name = config_setting_require_string(name);
+	if (!filter->name)
+		goto free;
+
+	value = config_setting_get_member(setting, "value");
+	if (!value) {
+		config_error(setting,
+			     "filter type `ueventvar' requires `value' as string describing a regular expression.");
+		goto free;
+	}
+
+	filter->value = config_setting_require_string(value);
+	if (!filter->value)
+		goto free;
 
 	ret = regcomp(&filter->regex, filter->value, REG_EXTENDED|REG_NOSUB);
-
 	if (ret) {
 		char buf[4096];
 		regerror(ret, &filter->regex, buf, sizeof(buf));
 		config_error(value, "%s", buf);
-		free(filter);
+		goto free;
 	}
 
 	return &filter->base;
+free:
+	filter_release(&filter->base);
+	return NULL;
 }
 
 static bool

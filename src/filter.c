@@ -57,7 +57,8 @@ filter_lookup(const struct list_head *filters,
 	const char *name;
 	struct filter *filter;
 
-	if (!config_setting_require_string(filter_name))
+	name = config_setting_require_string(filter_name);
+	if (!name)
 		return NULL;
 
 	name = config_setting_get_string(filter_name);
@@ -103,11 +104,9 @@ filter_setup(const config_setting_t *setting)
 		return NULL;
 	}
 
-	if (!config_setting_require_string(type))
+	name = config_setting_require_string(type);
+	if (!name)
 		return NULL;
-
-	name = config_setting_get_string(type);
-	g_assert(name != NULL);
 
 	for (i = 0; i < ARRAY_SIZE(filter_types); i++) {
 		struct filter_type *ftype = filter_types[i];

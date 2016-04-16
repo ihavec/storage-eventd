@@ -75,11 +75,9 @@ action_setup(const config_setting_t *setting)
 		return NULL;
 	}
 
-	if (!config_setting_require_string(type))
+	name = config_setting_require_string(type);
+	if (!name)
 		return NULL;
-
-	name = config_setting_get_string(type);
-	g_assert(name != NULL);
 
 	for (i = 0; i < ARRAY_SIZE(action_types); i++) {
 		struct action_type *atype = action_types[i];
@@ -116,11 +114,9 @@ action_lookup(const struct list_head *actions,
 	const char *name;
 	struct action *action;
 
-	if (!config_setting_require_string(action_name))
+	name = config_setting_require_string(action_name);
+	if (!name)
 		return NULL;
-
-	name = config_setting_get_string(action_name);
-	g_assert(name != NULL);
 
 	list_for_each_entry(action, actions, node) {
 		if (!strcasecmp(action->name, name)) {

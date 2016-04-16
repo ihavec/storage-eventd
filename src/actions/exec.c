@@ -50,10 +50,9 @@ setup_argv(const struct exec_action *action, const config_setting_t *command,
 	const char *args;
 	struct subst_vec **vec;
 
-	if (!config_setting_require_string(command))
+	args = config_setting_require_string(command);
+	if (!args)
 		return -EINVAL;
-
-	args = config_setting_get_string(command);
 
 	*vecp = NULL;
 	*countp = 0;

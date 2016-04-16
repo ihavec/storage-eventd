@@ -151,15 +151,18 @@ config_setting_source_basename(const config_setting_t *setting)
 	return basename(config_setting_source_file(setting));
 }
 
-bool
+const char *
 config_setting_require_string(const config_setting_t *setting)
 {
+	const char *str;
 	if (config_setting_type(setting) != CONFIG_TYPE_STRING) {
 		config_error(setting, "`%s' must be a quoted string.",
 			     config_setting_name(setting));
-		return false;
+		return NULL;
 	}
-	return true;
+	str = config_setting_get_string(setting);
+	g_assert(str != NULL);
+	return str;
 }
 
 bool

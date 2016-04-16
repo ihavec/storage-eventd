@@ -14,7 +14,7 @@ void config_signal(void);
 struct event *event_lookup(struct udev_device *uevent);
 
 const char *config_setting_source_basename(const config_setting_t *setting);
-bool config_setting_require_string(const config_setting_t *setting);
+const char * config_setting_require_string(const config_setting_t *setting);
 bool config_setting_require_int(const config_setting_t *setting);
 bool config_setting_require_int64(const config_setting_t *setting);
 int config_setting_fill_string_vector(const char **vector, size_t len,
