@@ -26,25 +26,9 @@ void
 filter_init(struct filter *filter, const config_setting_t *setting,
 	    const struct filter_type *type)
 {
-	config_setting_t *parent = config_setting_parent(setting);
-	config_setting_t *pparent = config_setting_parent(parent);
-	char *name = NULL;
-	char buf[4096];
-
-	/* filters section */
-	if (config_setting_is_root(pparent))
-		name = config_setting_name(setting);
-	/* one of a list of inline filters */
-	else if (config_setting_type(parent) == CONFIG_TYPE_LIST)
-		snprintf(buf, sizeof(buf), "filter_anon_%s_%d",
-			 config_setting_name(pparent),
-			 config_setting_index(setting));
-	else {
-		snprintf(buf, sizeof(buf), "filter_anon_%s",
-			 config_setting_name(parent));
-	}
-	filter->name = strdup(name ?: buf);
-	log_debug("adding filter: \"%s\"", filter->name);
+	const char *name = config_setting_get_nested_name(setting);
+	log_debug("adding filter: \"%s\"", name);
+	filter->name = name;
 	filter->type = type;
 	INIT_LIST_HEAD(&filter->node);
 }

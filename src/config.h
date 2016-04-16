@@ -19,6 +19,7 @@ bool config_setting_require_int(const config_setting_t *setting);
 bool config_setting_require_int64(const config_setting_t *setting);
 int config_setting_fill_string_vector(const char **vector, size_t len,
 				      const config_setting_t *group);
+const char *config_setting_get_nested_name(const config_setting_t *setting);
 
 #define config_error(setting, fmt, args...)				 \
 do {									 \

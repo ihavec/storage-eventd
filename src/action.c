@@ -20,7 +20,7 @@ void
 __action_init(struct action *action, const char *name,
 	      const struct action_type *type)
 {
-	action->name = strdup(name);
+	action->name = name;
 	action->type = type;
 	INIT_LIST_HEAD(&action->node);
 	log_debug("adding action: \"%s\"", action->name);
@@ -30,24 +30,8 @@ void
 action_init(struct action *action, const config_setting_t *setting,
 	    const struct action_type *type)
 {
-	config_setting_t *parent = config_setting_parent(setting);
-	config_setting_t *pparent = config_setting_parent(parent);
-	char *name = NULL;
-	char buf[4096];
-
-	/* actions section */
-	if (config_setting_is_root(pparent))
-		name = config_setting_name(setting);
-	/* one of a list of inline actions */
-	else if (config_setting_type(parent) == CONFIG_TYPE_LIST)
-		snprintf(buf, sizeof(buf), "action_anon_%s_%d",
-			 config_setting_name(pparent),
-			 config_setting_index(setting));
-	else
-		snprintf(buf, sizeof(buf), "action_anon_%s",
-			 config_setting_name(parent));
-
-	__action_init(action, name ?: buf, type);
+	const char *name = config_setting_get_nested_name(setting);
+	__action_init(action, name, type);
 }
 
 void
@@ -94,6 +78,7 @@ struct action *
 action_make_ignore(void)
 {
 	struct action *action;
+	const char *name;
 
 	action = zalloc(sizeof(*action));
 	if (!action) {
@@ -101,7 +86,13 @@ action_make_ignore(void)
 		return NULL;
 	}
 
-	__action_init(action, "ignore", &ignore_action_type);
+	name = strdup("ignore");
+	if (!name) {
+		log_err("Failed to allocate memory for action rule name.");
+		return NULL;
+	}
+
+	__action_init(action, name, &ignore_action_type);
 	return action;
 }
 

@@ -522,3 +522,31 @@ const char *config_var_subst(const struct subst_vec *vec)
 {
 	return subst_replace(vec, config_lookup_fn, NULL);
 }
+
+const char *
+config_setting_get_nested_name(const config_setting_t *setting)
+{
+	config_setting_t *parent = config_setting_parent(setting);
+	config_setting_t *pparent = config_setting_parent(parent);
+	char *mode;
+	char buf[4096];
+	char *name = buf;
+
+	/* named rules sections */
+	if (config_setting_is_root(pparent))
+		name = config_setting_name(setting);
+	else if (config_setting_type(parent) == CONFIG_TYPE_LIST) {
+		/* one of a list of inline rules */
+		mode = config_setting_name(parent);
+		snprintf(buf, sizeof(buf), "%s_anon_%s_%d", mode,
+			 config_setting_name(pparent),
+			 config_setting_index(setting));
+	} else {
+		/* inline rule */
+		mode = config_setting_name(setting);
+		snprintf(buf, sizeof(buf), "%s_anon_%s", mode,
+			 config_setting_name(parent));
+	}
+
+	return strdup(name);
+}
