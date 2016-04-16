@@ -36,7 +36,7 @@ struct email_action {
 	char *template_buf;
 	struct subst_vec *email_template;
 	int recipient_count;
-	const char *recipients[0];
+	const char **recipients;
 };
 
 static inline struct email_action *
@@ -97,12 +97,18 @@ setup(const struct action_type *type, const config_setting_t *setting)
 		return NULL;
 	}
 
-	action = zalloc(sizeof(*action) + sizeof(char *) * rcount);
+	action = zalloc(sizeof(*action));
 	if (!action) {
 		log_err("failed to allocate memory for email action.");
 		return NULL;
 	}
 	action_init(&action->base, setting, type);
+	action->recipients = calloc(rcount, sizeof(*action->recipients));
+	if (!action->recipients) {
+		log_err("failed to allocate memory for email recipients.");
+		goto fail;
+
+	}
 	action->recipient_count = rcount;
 
 	if (sender) {
@@ -332,6 +338,8 @@ release(struct action *base_action)
 		subst_release(action->email_template);
 	if (action->template_buf)
 		free(action->template_buf);
+	if (action->recipients)
+		free(action->recipients);
 	free(action);
 }
 
