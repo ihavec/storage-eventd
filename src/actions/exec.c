@@ -135,15 +135,15 @@ setup(const struct action_type *type, const config_setting_t *setting)
 		if (!action->envp)
 			goto free;
 
-		ret = config_setting_fill_string_vector(action->envp + 1,
-							count, env);
+		ret = config_setting_fill_string_vector(action->envp, count,
+							env);
 		if (ret) {
 			g_assert(ret != -ERANGE);
 			goto free;
 		}
 		action->envp[count] = NULL;
 
-		for (i = 1; action->envp[i]; i++) {
+		for (i = 0; action->envp[i]; i++) {
 			if (!strchr(action->envp[i], '=')) {
 				config_error(env, "`%s' is not a valid environment value.  Must be key=value (value may be empty).",
 						     action->envp[i]);
