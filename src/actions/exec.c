@@ -292,9 +292,13 @@ static void
 release(struct action *base_action)
 {
 	struct exec_action *action = to_exec_action(base_action);
+	int i;
 
-	if (action->argv)
+	if (action->argv) {
+		for (i = 0; action->argv[i]; i++)
+			subst_release(action->argv[i]);
 		free(action->argv);
+	}
 	if (action->envp)
 		free(action->envp);
 	free(action);
