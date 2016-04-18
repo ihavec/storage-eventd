@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <ctype.h>
 
 #include <libconfig.h>
 #include <glib.h>
@@ -21,13 +22,18 @@
 #include "uevent.h"
 #include "util.h"
 
+struct env_var {
+	const char *name;
+	struct subst_vec *value;
+};
+
 struct exec_action {
 	struct action base;
 	const char *path;
 	int argc;
 	struct subst_vec **argv;
 	int envc;
-	const char **envp;
+	struct env_var **envp;
 	uid_t uid;
 	gid_t gid;
 };
@@ -90,6 +96,72 @@ free:
 	return ret;
 }
 
+static int
+setup_env(struct exec_action *action, const config_setting_t *env)
+{
+	int count, i;
+	const char **envp = NULL;
+	int ret = 0;
+
+	if (!env)
+		return 0;
+
+	if (config_setting_type(env) == CONFIG_TYPE_STRING)
+		count = 1;
+	else if (config_setting_is_aggregate(env))
+		count = config_setting_length(env);
+	else {
+		config_error(env, "`env' must be string or aggregate of strings, formatted as key=value (value may be empty).");
+		return -EINVAL;
+	}
+
+	envp = calloc(count + 1, sizeof(char *));
+	if (!envp) {
+		log_err("Failed to allocate memory");
+		return -ENOMEM;
+	}
+
+	ret = config_setting_fill_string_vector(envp, count, env);
+	if (ret) {
+		g_assert(ret != -ERANGE);
+		goto free;
+	}
+
+	action->envp = calloc(count + 1, sizeof(struct env_var *));
+	if (!action->envp) {
+		ret = -ENOMEM;
+		log_err("Failed to allocate memory.");
+		goto free;
+	}
+
+	for (i = 0; envp[i]; i++) {
+		const char *name, *value;
+		name = value = envp[i];
+
+		while (*value && *value != '=') {
+			if (!isalnum(*value) && *value != '_') {
+				ret = -EINVAL;
+				config_error(env,
+					     "`%s' is not a valid environment variable name.  Must be series of alphanumeric or underscore characters (or empty).",
+					     envp[i]);
+				break;
+			}
+		}
+
+		action->envp[i]->name = strndup(name, value - name);
+		if (*value++ != '=')
+			continue;
+
+		ret = subst_tokenize(value, &action->envp[i]->value);
+		if (ret)
+			break;
+	}
+	action->envp[count] = NULL;
+free:
+	free(envp);
+	return ret;
+}
+
 static struct action *
 setup(const struct action_type *type, const config_setting_t *setting)
 {
@@ -115,41 +187,13 @@ setup(const struct action_type *type, const config_setting_t *setting)
 		goto free;
 	}
 
-	ret = setup_argv(action, command,
-			 &action->argv, &action->argc);
+	ret = setup_argv(action, command, &action->argv, &action->argc);
 	if (ret)
 		goto free;
 
-	if (env) {
-		int count, i;
-		if (config_setting_type(env) == CONFIG_TYPE_STRING)
-			count = 1;
-		else if (config_setting_is_aggregate(env))
-			count = config_setting_length(env);
-		else {
-			config_error(env, "`env' must be string or aggregate of strings, formatted as key=value (value may be empty).");
-			goto free;
-		}
-
-		action->envp = calloc(count + 1, sizeof(char *));
-		if (!action->envp)
-			goto free;
-
-		ret = config_setting_fill_string_vector(action->envp, count,
-							env);
-		if (ret) {
-			g_assert(ret != -ERANGE);
-			goto free;
-		}
-		action->envp[count] = NULL;
-
-		for (i = 0; action->envp[i]; i++) {
-			if (!strchr(action->envp[i], '=')) {
-				config_error(env, "`%s' is not a valid environment value.  Must be key=value (value may be empty).",
-						     action->envp[i]);
-			}
-		}
-	}
+	ret = setup_env(action, env);
+	if (ret)
+		goto free;
 
 	if (uid) {
 		if (config_setting_type(uid) == CONFIG_TYPE_STRING) {
@@ -223,6 +267,76 @@ free:
 }
 
 static int
+export_uevent_properties(struct udev_device *uevent)
+{
+	struct udev_list_entry *list;
+	struct udev_list_entry *node;
+	int ret = 0;
+
+	list = udev_device_get_properties_list_entry(uevent);
+	if (!list)
+		return 0;
+
+	udev_list_entry_foreach(node, list) {
+		const char *name, *value;
+		name = udev_list_entry_get_name(node);
+		value = udev_list_entry_get_value(node);
+		if (!global_state.dry_run) {
+			ret = setenv(name, value, 1);
+		} else if (global_state.debug) {
+			log_info("Would set env %s=%s",
+				 name, value);
+		}
+		if (ret)
+			break;
+	}
+	return ret;
+}
+
+static int
+export_properties(const struct exec_action *action,
+		  struct udev_device *uevent)
+{
+	int i;
+	int ret = 0;
+
+	if (global_state.dry_run)
+		return 0;
+
+	export_uevent_properties(uevent);
+
+	for (i = 0; i < action->envc; i++) {
+		const char *name;
+		const char *value;
+		bool needs_free = false;
+
+		name = action->envp[i]->name;
+		if (action->envp[i]->value) {
+			value = uevent_subst(action->envp[i]->value, uevent);
+			needs_free = true;
+		} else
+			value = uevent_get_property(name, uevent, &needs_free);
+
+		if (value) {
+			if (!global_state.dry_run)
+				ret = setenv(name, value, 1);
+			else if (global_state.debug)
+				log_info("Would set env %s=%s",
+					 name, value);
+			if (ret) {
+				log_err("failed to set environment %s=%s",
+					name, value);
+				break;
+			}
+			if (needs_free)
+				free((char *)value);
+		}
+	}
+
+	return ret;
+}
+
+static int
 execute(const struct action *base_action, struct udev_device *uevent)
 {
 	const struct exec_action *action = to_exec_action(base_action);
@@ -236,11 +350,6 @@ execute(const struct action *base_action, struct udev_device *uevent)
 		pid = fork();
 	if (pid == 0) { /* child */
 		const char **args;
-		char *env[1] = { NULL };
-		char **envp = env;
-
-		if (action->envp)
-			envp = (char **)action->envp;
 
 		args = alloca(sizeof(char *) * (action->argc + 1));
 		for (i = 0; i < action->argc; i++) {
@@ -251,6 +360,10 @@ execute(const struct action *base_action, struct udev_device *uevent)
 			}
 		}
 		args[action->argc] = NULL;
+
+		ret = export_properties(action, uevent);
+		if (ret)
+			goto no_exec;
 
 		ret = util_set_cred(action->gid, action->uid);
 		if (ret)
@@ -269,7 +382,7 @@ execute(const struct action *base_action, struct udev_device *uevent)
 				return 0;
 		}
 
-		ret = execvpe(args[0], (char ** const)args, envp);
+		ret = execvp(args[0], (char ** const)args);
 		if (ret) {
 			log_warn("failed to execute %s: %s",
 				 args[0], strerror(errno));
@@ -299,8 +412,14 @@ release(struct action *base_action)
 			subst_release(action->argv[i]);
 		free(action->argv);
 	}
-	if (action->envp)
+	
+	if (action->envp) {
+		for (i = 0; action->envp[i]; i++) {
+			free((char *)action->envp[i]->name);
+			subst_release(action->envp[i]->value);
+		}
 		free(action->envp);
+	}
 	free(action);
 }
 

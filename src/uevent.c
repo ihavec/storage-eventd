@@ -275,10 +275,10 @@ free_monitor:
 	return ret;
 }
 
-const char *uevent_lookup_fn(const char *key, void *data, bool *needs_free)
+const char *uevent_get_property(const char *key, struct udev_device *uevent,
+				bool *needs_free)
 {
 	const char *value;
-	struct udev_device *uevent = data;
 	*needs_free = false;
 
 	value = udev_device_get_property_value(uevent, key);
@@ -301,6 +301,14 @@ const char *uevent_lookup_fn(const char *key, void *data, bool *needs_free)
 	}
 
 	return value;
+}
+
+static const char *uevent_lookup_fn(const char *key, void *data,
+				    bool *needs_free)
+{
+	struct udev_device *uevent = data;
+
+	return uevent_get_property(key, uevent, needs_free);
 }
 
 const char *uevent_subst(const struct subst_vec *vec,
