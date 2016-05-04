@@ -1,0 +1,5 @@
+- Implement a pipe action so that external programs can be called with
+  a template on stdin.  This would be useful for outputting info in
+  a variety of formats (e.g. XML, JSON) that monitoring packages consume.
+- Add actual test cases rather than the one-off functional tests that I
+  have now.
